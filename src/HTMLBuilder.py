@@ -14,8 +14,15 @@ class Builder :
         for c in headcontent :
            self.htmlcontent += c + "\n"
            
-        self.htmlcontent += "<title>"+title+"</title>\n"
-        self.htmlcontent += "</head>\n<body>\n"                
+        self.htmlcontent += "<title>"+title+"</title>\n</head>\n<body>\n"
+        
+    def style(self, classid, css = []) :
+        self.wt("<style>")
+        self.wt(classid + " {")
+        for c in css :
+            self.wt(c)
+            
+        self.wt("}\n</style>")                
     
     def P(self, attributes = [], content = "") :
         self.wt("<p ", False)

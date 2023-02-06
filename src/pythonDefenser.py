@@ -27,7 +27,7 @@ config_file = open(data_dir + "conf.yaml", "r")
 config_data = yaml.load(config_file, Loader=SafeLoader)
 
 paths = config_data["filelist"]
-
+dirs = config_data["folderlist"]
 
 class VTScanSystem:
     def __init__(self) -> None:
@@ -68,7 +68,6 @@ class VTScanSystem:
                 stats = result.get("data").get("attributes").get("stats")
                 results = result.get("data").get("attributes").get("results")            
                 self.createHTMLRapport(result, status, stats, results)
-                sys.exit()
             elif status == "queued":
                 print(Colors.BLUE + "status QUEUED..." + Colors.ENDC)
                 with open(os.path.abspath(self.file_path), "rb") as file_path:
@@ -91,7 +90,6 @@ class VTScanSystem:
                 results = result.get("data").get( "attributes").get("last_analysis_results")
                 
                 self.createHTMLRapport(result, "queued", stats, results)            
-                sys.exit()
             else:
                 print(Colors.BLUE + "failed to analyse :(..." + Colors.ENDC)
 
@@ -108,14 +106,32 @@ class VTScanSystem:
         print(Colors.BLUE + "Génération du rapport HTML..." + Colors.ENDC)
         
         hb = HTMLBuilder.Builder(config_data["output_folder"])
+        
+        hb.style(".engine_result", ["background-color: rgb(186, 189, 182);", "width: 20%;", "border-radius: 15px;", "padding: 10px;","margin-bottom: 2%;" ,"margin-left: 3%"])
+        hb.style(".bad", ["background-color: rgb(255, 51, 51)"])
+        hb.style(".good", ["background-color: rgb(26, 255, 26)"])
+        hb.style("#engines_list", ["display: flex;", "flex-direction: row;", "flex-wrap: wrap;"])
+        hb.style(".engine_name", ["text-align: center;", "font-weight: bold;", "background-color: rgb(166, 170, 161);", "border-radius: 5px;"])
+        hb.style(".result", ["color: black;", "font-weight: bold;"])
+        hb.style("h1", ["text-align: center;", "font-weight: bold;"])
             
         hb.H("", "1", "Rappport d'analyses du fichier " + self.file_path)
+        hb.P([], "Nombre de moteurs utilisés : " + str(stats.get("malicious") + stats.get("undetected")))
         hb.P(["id='undetected_count'"], "Non détecté(s) : " + str(stats.get("undetected")))
-        hb.P(["id='undetected_count'"], "Détecté(s) : " + str(stats.get("malicious")))       
+        hb.P(["id='undetected_count'"], "Détecté(s) : " + str(stats.get("malicious")))
+        
+        if stats.get("malicious") != 0 :
+            hb.P(["id='file_status'"], "Fichier malicieux détecté !")
+        else :
+            hb.P(["id='file_status'"], "Fichier sain.")
+               
         hb.open(["id='engines_list'"])
         
         for k in results :
-            hb.open(["class='engine_result'"])        
+            if results[k].get("category") == "malicious" :
+                hb.open(["class='engine_result bad'"])       
+            else :
+                hb.open(["class='engine_result good'"])
             hb.P(["class='engine_name'"], results[k].get("engine_name"))
             hb.P(["class='engine_version'"], "Version : " + str(results[k].get("engine_version")))
             hb.P(["class='engine_category'"], "Catégorie : " + str(results[k].get("category")))
@@ -129,6 +145,22 @@ class VTScanSystem:
         print(Colors.GREEN + "Rapport généré avec succès ! " + Colors.ENDC)
         print(Colors.GREEN + "Fichier : " + hb.file.name)
         
+    def getPathsFromFolder(self, dir) :
+        contents = os.listdir(dir)
+        
+        for content in contents :
+            if os.path.isdir(dir + content) == False :
+                paths.append(dir + content)
+    
 if __name__ == "__main__":
     vtscanner = VTScanSystem()
-    vtscanner.start(paths[0])
+    
+    print(paths)
+    
+    for dir in dirs :
+       vtscanner.getPathsFromFolder(dir)
+       
+    print(paths)
+    
+    for path in paths :
+        vtscanner.start(path)
