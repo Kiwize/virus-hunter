@@ -1,0 +1,8 @@
+
+output_folder: "./"
+
+filelist: 
+ - "../data/vt_data/positive_eicar.txt"
+
+folderlist:
+ - "/home"
