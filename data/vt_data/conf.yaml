@@ -1,8 +1,12 @@
+enableDirScan: True
+logHealthyFiles: True
+createHTMLRapport: True
 
-output_folder: "./"
+htmlOutputFolder: "./"
+textLogsOutputFolder: "./logs/"
 
 filelist: 
  - "../data/vt_data/positive_eicar.txt"
 
 folderlist:
- - "/home"
+ - "/home/thomas/Documents/DevProjects/todoman/index/"
