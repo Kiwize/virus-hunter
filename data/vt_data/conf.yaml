@@ -2,6 +2,10 @@ enableDirScan: True
 logHealthyFiles: True
 createHTMLRapport: True
 
+queryThreshold: 4
+queryCooldown: 60
+enableQueryLimiter: True
+
 VT_API_Key: "eb09093303b95b702d41a7aeb73d5d2e1c0a766587d2d85133cef714a49d8cea"
 
 htmlOutputFolder: "./"
@@ -12,3 +16,4 @@ filelist:
 
 folderlist:
  - "/home/thomas/Documents/DevProjects/todoman/index/"
+ - "/home/thomas/Documents/scantest/"

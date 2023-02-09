@@ -1,3 +1,4 @@
+import time
 import requests
 import os
 import sys
@@ -7,16 +8,6 @@ import hashlib
 import yaml
 from yaml.loader import SafeLoader
 import HTMLBuilder
-
-# Couleurs dans le terminal
-class Colors:
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    PURPLE = '\033[95m'
-    ENDC = '\033[0m'
-
 
 vt_url = "https://www.virustotal.com/api/v3/"
 
@@ -35,51 +26,50 @@ class VTScanSystem:
             "x-apikey": config_data["VT_API_Key"],
             "accept": "application/json"
         }
+        
+        self.queryCounter = 0
+        self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause
+        self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
 
     def upload(self, file):
         self.file_path = file
-        print(Colors.BLUE + "Uploading file : " + file + "..." + Colors.ENDC)
+        print("Uploading file : " + file + "...")
         files = {"file": (file, open(file, "rb"), "text/plain")}
 
         self.file_url = vt_url + "files"
-        print(Colors.YELLOW + "Uploading to " + self.file_url + Colors.ENDC)
+        print("Uploading to " + self.file_url)
         res = requests.post(self.file_url, headers=self.headers, files=files)
 
         if res.status_code == 200:
             result = res.json()
             self.file_id = result.get("data").get("id")
-            print(Colors.YELLOW + self.file_id + Colors.ENDC)
-            print(Colors.GREEN + "Files successfully uploaded." + Colors.ENDC)
+            print("Fichier envoyé avec succès !")
         else:
-            print(Colors.RED + "Failed to upload files..." + Colors.ENDC)
-            print(Colors.RED + "Response code: " + str(res.status_code) + Colors.ENDC)
+            print("Failed to upload files... ( "+ str(res.status_code)+" )")
             sys.exit()
 
-    def analyse(self):
-        print(Colors.BLUE + "Get info about the results of analysis..." + Colors.ENDC)
+    def analyse(self):       
         analysis_url = vt_url + "analyses/" + self.file_id
         res = requests.get(analysis_url, headers=self.headers)
         if res.status_code == 200:
+            self.queryCounter += 1
             result = res.json()
             status = result.get("data").get("attributes").get("status")
             if status == "completed":
                 stats = result.get("data").get("attributes").get("stats")
                 results = result.get("data").get("attributes").get("results")
-                self.appendTXTLogFile(stats)            
-                self.createHTMLRapport(stats, results)
+                self.postAnalysis(stats, results)
             elif status == "queued":
-                print(Colors.BLUE + "status QUEUED..." + Colors.ENDC)
+                print("En attente...")
                 with open(os.path.abspath(self.file_path), "rb") as file_path:
                     b = file_path.read()
                     hashsum = hashlib.sha256(b).hexdigest()
                     self.info(hashsum)
         else:
-            print(Colors.RED + "failed to get results of analysis :(" + Colors.ENDC)
-            print(Colors.RED + "status code: " + str(res.status_code) + Colors.ENDC)
+            print("Erreur l'or de la récupération des résultats d'analyses... ( "+ str(res.status_code)+" )")
             sys.exit()
 
     def info(self, file_hash):
-        print(Colors.BLUE + "get file info by ID: " + file_hash + Colors.ENDC)
         info_url = vt_url + "files/" + file_hash
         res = requests.get(info_url, headers=self.headers)
         if res.status_code == 200:
@@ -87,14 +77,12 @@ class VTScanSystem:
             if result.get("data").get("attributes").get("last_analysis_results"):
                 stats = result.get("data").get( "attributes").get("last_analysis_stats")
                 results = result.get("data").get( "attributes").get("last_analysis_results")
-                self.appendTXTLogFile(stats) 
-                self.createHTMLRapport(stats, results)            
+                self.postAnalysis(stats, results)   
             else:
-                print(Colors.BLUE + "failed to analyse :(..." + Colors.ENDC)
+                print("Erreur l'or de l'analyse...")
 
         else:
-            print(Colors.RED + "failed to get information :(" + Colors.ENDC)
-            print(Colors.RED + "status code: " + str(res.status_code) + Colors.ENDC)
+            print("Erreur l'or de la récupération des résultats d'analyses... ( "+ str(res.status_code)+" )")
             sys.exit()
 
     def start(self, file):
@@ -106,14 +94,11 @@ class VTScanSystem:
             
         if stats.get("malicious") != 0 :
             createLog("Fichier malicieux : " + str(stats.get("malicious")) + "/" + nbEngines, self.file_path)
-        else :
-            if(config_data["logHealthyFiles"]) :
-                createLog("Fichier sein", self.file_path)   
+        elif (config_data["logHealthyFiles"]):
+            createLog("Fichier sein", self.file_path)   
 
     def createHTMLRapport(self, stats, results):
         if config_data["createHTMLRapport"] :
-            print(Colors.BLUE + "Génération du rapport HTML..." + Colors.ENDC)
-            
             nbEngines = str(stats.get("malicious") + stats.get("undetected"))
             
             hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"])
@@ -153,8 +138,7 @@ class VTScanSystem:
                 hb.close()        
             hb.close()    
             hb.CloseFile()
-            print(Colors.GREEN + "Rapport généré avec succès ! " + Colors.ENDC)
-            print(Colors.GREEN + "Fichier : " + hb.file.name)
+            print("Rapport généré avec succès ! Fichier : " + hb.file.name)
             
     def getPathsFromFolder(self, dir) :
         contents = os.listdir(dir)
@@ -162,6 +146,10 @@ class VTScanSystem:
         for content in contents :
             if os.path.isdir(dir + content) == False :
                 paths.append(dir + content)
+                
+    def postAnalysis(self, stats, results) :
+        self.appendTXTLogFile(stats) 
+        self.createHTMLRapport(stats, results)
                 
 
 def createLog(result, scannedFile) :
@@ -201,4 +189,9 @@ if __name__ == "__main__":
         sys.exit(-1)
     else :
         for path in paths :
+            if (vtscanner.queryCounter >= vtscanner.queryThreshold) and config_data["enableQueryLimiter"]:
+                print("Attente de " + str(vtscanner.queryCooldown) + " secondes...")
+                time.sleep(vtscanner.queryCooldown)
+                vtscanner.queryCounter = 0
+                
             vtscanner.start(path)
