@@ -20,7 +20,6 @@ class Colors:
 
 vt_url = "https://www.virustotal.com/api/v3/"
 
-api_key = "eb09093303b95b702d41a7aeb73d5d2e1c0a766587d2d85133cef714a49d8cea"
 data_dir = "../data/vt_data/"
 config_file = open(data_dir + "conf.yaml", "r")
 
@@ -33,7 +32,7 @@ class VTScanSystem:
     def __init__(self) -> None:
         # Header html query vt
         self.headers = {
-            "x-apikey": api_key,
+            "x-apikey": config_data["VT_API_Key"],
             "accept": "application/json"
         }
 
