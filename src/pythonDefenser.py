@@ -3,11 +3,12 @@ import requests
 import os
 import sys
 import datetime
-import json
 import hashlib
 import yaml
 from yaml.loader import SafeLoader
 import HTMLBuilder
+
+import vt
 
 vt_url = "https://www.virustotal.com/api/v3/"
 
@@ -21,75 +22,24 @@ dirs = config_data["folderlist"]
 
 class VTScanSystem:
     def __init__(self) -> None:
-        # Header html query vt
-        self.headers = {
-            "x-apikey": config_data["VT_API_Key"],
-            "accept": "application/json"
-        }
+        self.vt = vt.Client(config_data["VT_API_Key"])
         
         self.queryCounter = 0
         self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
 
-    def upload(self, file):
+    def apiScan(self, file):
+        data = self.vt.scan_file(open(file, 'rb'))
+        data = self.vt.get_object("/analyses/{}", data.id)
+        
         self.file_path = file
-        print("Uploading file : " + file + "...")
-        files = {"file": (file, open(file, "rb"), "text/plain")}
+        
+        self.appendTXTLogFile(data)
+        self.createHTMLRapport(data)
 
-        self.file_url = vt_url + "files"
-        print("Uploading to " + self.file_url)
-        res = requests.post(self.file_url, headers=self.headers, files=files)
-
-        if res.status_code == 200:
-            result = res.json()
-            self.file_id = result.get("data").get("id")
-            print("Fichier envoyé avec succès !")
-        else:
-            print("Failed to upload files... ( "+ str(res.status_code)+" )")
-            sys.exit()
-
-    def analyse(self):       
-        analysis_url = vt_url + "analyses/" + self.file_id
-        res = requests.get(analysis_url, headers=self.headers)
-        if res.status_code == 200:
-            self.queryCounter += 1
-            result = res.json()
-            status = result.get("data").get("attributes").get("status")
-            if status == "completed":
-                stats = result.get("data").get("attributes").get("stats")
-                results = result.get("data").get("attributes").get("results")
-                self.postAnalysis(stats, results)
-            elif status == "queued":
-                print("En attente...")
-                with open(os.path.abspath(self.file_path), "rb") as file_path:
-                    b = file_path.read()
-                    hashsum = hashlib.sha256(b).hexdigest()
-                    self.info(hashsum)
-        else:
-            print("Erreur l'or de la récupération des résultats d'analyses... ( "+ str(res.status_code)+" )")
-            sys.exit()
-
-    def info(self, file_hash):
-        info_url = vt_url + "files/" + file_hash
-        res = requests.get(info_url, headers=self.headers)
-        if res.status_code == 200:
-            result = res.json()     
-            if result.get("data").get("attributes").get("last_analysis_results"):
-                stats = result.get("data").get( "attributes").get("last_analysis_stats")
-                results = result.get("data").get( "attributes").get("last_analysis_results")
-                self.postAnalysis(stats, results)   
-            else:
-                print("Erreur l'or de l'analyse...")
-
-        else:
-            print("Erreur l'or de la récupération des résultats d'analyses... ( "+ str(res.status_code)+" )")
-            sys.exit()
-
-    def start(self, file):
-        self.upload(file)
-        self.analyse()
-
-    def appendTXTLogFile(self, stats) :
+    def appendTXTLogFile(self, data) :
+        
+        stats = data.stats
         nbEngines = str(stats.get("malicious") + stats.get("undetected"))
             
         if stats.get("malicious") != 0 :
@@ -97,7 +47,10 @@ class VTScanSystem:
         elif (config_data["logHealthyFiles"]):
             createLog("Fichier sein", self.file_path)   
 
-    def createHTMLRapport(self, stats, results):
+    def createHTMLRapport(self, data):
+        stats = data.stats
+        results = data.results
+        
         if config_data["createHTMLRapport"] :
             nbEngines = str(stats.get("malicious") + stats.get("undetected"))
             
@@ -145,12 +98,7 @@ class VTScanSystem:
         
         for content in contents :
             if os.path.isdir(dir + content) == False :
-                paths.append(dir + content)
-                
-    def postAnalysis(self, stats, results) :
-        self.appendTXTLogFile(stats) 
-        self.createHTMLRapport(stats, results)
-                
+                paths.append(dir + content)             
 
 def createLog(result, scannedFile) :
     BUF_SIZE = 65536
@@ -176,11 +124,10 @@ def createLog(result, scannedFile) :
 if __name__ == "__main__":
     vtscanner = VTScanSystem()
     
-    if(config_data["enableDirScan"]) :
-        if(paths == None) :
+    if(config_data["enableDirScan"]) :   
+        if(dirs == None) :
             print("Aucun dossier à scanner... Vérifiez la configuration.")
-            sys.exit(-1)
-        else :
+        else : 
             for dir in dirs :
                 vtscanner.getPathsFromFolder(dir)
     
@@ -194,4 +141,5 @@ if __name__ == "__main__":
                 time.sleep(vtscanner.queryCooldown)
                 vtscanner.queryCounter = 0
                 
-            vtscanner.start(path)
+            print("Scanning file : " + os.path.abspath(path))    
+            vtscanner.apiScan(os.path.abspath(path))

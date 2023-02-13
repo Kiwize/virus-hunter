@@ -13,7 +13,7 @@ textLogsOutputFolder: "./logs/"
 
 filelist: 
  - "../data/vt_data/positive_eicar.txt"
+ - "../data/vt_data/file.txt"
 
 folderlist:
- - "/home/thomas/Documents/DevProjects/todoman/index/"
- - "/home/thomas/Documents/scantest/"
+
