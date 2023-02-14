@@ -3,17 +3,17 @@ logHealthyFiles: True
 createHTMLRapport: True
 
 queryThreshold: 4
-queryCooldown: 60
+queryCooldown: 50
 enableQueryLimiter: True
 
 VT_API_Key: "eb09093303b95b702d41a7aeb73d5d2e1c0a766587d2d85133cef714a49d8cea"
 
-htmlOutputFolder: "./"
-textLogsOutputFolder: "./logs/"
+htmlOutputFolder: "./logs/html/"
+textLogsOutputFolder: "./logs/txt/"
 
 filelist: 
- - "../data/vt_data/positive_eicar.txt"
  - "../data/vt_data/file.txt"
 
 folderlist:
-
+ - "C:/Windows/"
+ - "C:/Windows/System32/"
