@@ -30,6 +30,7 @@ class VTScanSystem:
 
     def apiScan(self, file):
         data = self.vt.scan_file(open(file, 'rb'))
+
         data = self.vt.get_object("/analyses/{}", data.id)
         
         self.file_path = file
@@ -50,12 +51,13 @@ class VTScanSystem:
     def createHTMLRapport(self, data):
         stats = data.stats
         results = data.results
-        
+
         if config_data["createHTMLRapport"] :
             nbEngines = str(stats.get("malicious") + stats.get("undetected"))
             
             hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"])
             
+            hb.style("h1, p, a", ["font-family: Verdana, Geneva, sans-serif;"])
             hb.style(".engine_result", ["background-color: rgb(186, 189, 182);", "width: 20%;", "border-radius: 15px;", "padding: 10px;","margin-bottom: 2%;" ,"margin-left: 3%"])
             hb.style(".bad", ["background-color: rgb(255, 51, 51)"])
             hb.style(".good", ["background-color: rgb(26, 255, 26)"])
@@ -75,7 +77,7 @@ class VTScanSystem:
                 hb.P(["id='file_status'"], "Fichier sain.")
                 
             hb.open(["id='engines_list'"])
-            
+
             for k in results :
                 if results[k].get("category") == "malicious" :
                     hb.open(["class='engine_result bad'"])       

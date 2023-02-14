@@ -2,13 +2,14 @@
 #Author: Thomas Pradeau
 
 import datetime
+import codecs
 
 class Builder :
-    def __init__(self, dest, headcontent = ["<meta charset='utf-8'>"], title = "Virustotal Rapport") -> None:
+    def __init__(self, dest, headcontent = ["<meta charset=\"UTF-8\">"], title = "Virustotal Rapport") -> None:
         # Get current datetime for log files.
         date = datetime.datetime.now()
         
-        self.file = open(dest + str(date.day) + "_" + str(date.month) + "_" + str(date.year) + "_" + str(date.hour) + "-" + str(date.minute) + "-" + str(date.second) + ".html", "w")
+        self.file = codecs.open(dest + str(date.day) + "_" + str(date.month) + "_" + str(date.year) + "_" + str(date.hour) + "-" + str(date.minute) + "-" + str(date.second) + ".html", "w", "utf-8")
         self.htmlcontent = "<!DOCTYPE html>\n<html>\n<head>\n"
 
         for c in headcontent :
