@@ -1,5 +1,5 @@
+import vt
 import time
-import requests
 import os
 import sys
 import datetime
@@ -7,10 +7,6 @@ import hashlib
 import yaml
 from yaml.loader import SafeLoader
 import HTMLBuilder
-
-import vt
-
-vt_url = "https://www.virustotal.com/api/v3/"
 
 data_dir = "../data/vt_data/"
 config_file = open(data_dir + "conf.yaml", "r")
@@ -29,14 +25,22 @@ class VTScanSystem:
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
 
     def apiScan(self, file):
-        data = self.vt.scan_file(open(file, 'rb'))
+        try :
+            data = self.vt.scan_file(open(file, 'rb'), True)
+        except PermissionError :
+            print("Permissions insuffisantes pour procéder au scan du fichier " + os.path.abspath(file))
+            return False
+        except FileNotFoundError:
+            print("Le fichier " + os.path.abspath(file) + " n'existe pas. Vérifiez la configuration.")
+            return False
 
         data = self.vt.get_object("/analyses/{}", data.id)
-        
-        self.file_path = file
-        
+        print(data)
+
+        self.file_path = file      
         self.appendTXTLogFile(data)
         self.createHTMLRapport(data)
+        return True
 
     def appendTXTLogFile(self, data) :
         
@@ -55,6 +59,11 @@ class VTScanSystem:
         if config_data["createHTMLRapport"] :
             nbEngines = str(stats.get("malicious") + stats.get("undetected"))
             
+            of = config_data["htmlOutputFolder"]
+
+            if(os.path.exists(of) == False) :
+                os.mkdir(of)
+
             hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"])
             
             hb.style("h1, p, a", ["font-family: Verdana, Geneva, sans-serif;"])
@@ -144,4 +153,6 @@ if __name__ == "__main__":
                 vtscanner.queryCounter = 0
                 
             print("Scanning file : " + os.path.abspath(path))    
-            vtscanner.apiScan(os.path.abspath(path))
+            
+            if vtscanner.apiScan(os.path.abspath(path)) :
+                vtscanner.queryCounter += 1
