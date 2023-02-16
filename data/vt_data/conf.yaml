@@ -12,7 +12,9 @@ htmlOutputFolder: "./logs/html/"
 textLogsOutputFolder: "./logs/txt/"
 
 filelist: 
- - "../data/vt_data/file.txt"
+ - "../data/vt_data/positive_eicar.txt"
+ - "../data/vt_data/test_file.txt"
+ 
 
 folderlist:
  - "C:/Windows/"

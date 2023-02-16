@@ -5,11 +5,18 @@ import datetime
 import codecs
 
 class Builder :
-    def __init__(self, dest, headcontent = ["<meta charset=\"UTF-8\">"], title = "Virustotal Rapport") -> None:
+    def __init__(self, dest, scan_res = False, headcontent = ["<meta charset=\"UTF-8\">"], title = "Virustotal Rapport") -> None:
         # Get current datetime for log files.
         date = datetime.datetime.now()
         
-        self.file = codecs.open(dest + str(date.day) + "_" + str(date.month) + "_" + str(date.year) + "_" + str(date.hour) + "-" + str(date.minute) + "-" + str(date.second) + ".html", "w", "utf-8")
+        if scan_res == False :
+            filename = dest + str(date.day) + "_" + str(date.month) + "_" + str(date.year) + "_" + str(date.hour) + "-" + str(date.minute) + "-" + str(date.second) + ".html"
+        else :
+            title = "Positive Virustotal rapport"
+            filename = dest + "D_" + str(date.day) + "_" + str(date.month) + "_" + str(date.year) + "_" + str(date.hour) + "-" + str(date.minute) + "-" + str(date.second) + ".html"
+
+        self.file = codecs.open(filename, "w", "utf-8")
+        
         self.htmlcontent = "<!DOCTYPE html>\n<html>\n<head>\n"
 
         for c in headcontent :

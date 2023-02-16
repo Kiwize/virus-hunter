@@ -33,11 +33,19 @@ class VTScanSystem:
         except FileNotFoundError:
             print("Le fichier " + os.path.abspath(file) + " n'existe pas. Vérifiez la configuration.")
             return False
+        except vt.APIError:
+            print("Erreur l'or du scan, veuillez réessayer.")
+            return False
 
         data = self.vt.get_object("/analyses/{}", data.id)
-        print(data)
-
-        self.file_path = file      
+        
+        self.file_path = file  
+        
+        if data.stats.get("malicious") != 0 :
+            os.rename(os.path.abspath(file), os.path.abspath("../data/vt_data/quarantine/" + os.path.basename(file)))
+            self.file_path = os.path.abspath("../data/vt_data/quarantine/" + os.path.basename(file))
+            
+        print(self.file_path)
         self.appendTXTLogFile(data)
         self.createHTMLRapport(data)
         return True
@@ -48,9 +56,9 @@ class VTScanSystem:
         nbEngines = str(stats.get("malicious") + stats.get("undetected"))
             
         if stats.get("malicious") != 0 :
-            createLog("Fichier malicieux : " + str(stats.get("malicious")) + "/" + nbEngines, self.file_path)
+            self.createLog("Fichier malicieux : " + str(stats.get("malicious")) + "/" + nbEngines)
         elif (config_data["logHealthyFiles"]):
-            createLog("Fichier sein", self.file_path)   
+            self.createLog("Fichier sein")   
 
     def createHTMLRapport(self, data):
         stats = data.stats
@@ -63,8 +71,12 @@ class VTScanSystem:
 
             if(os.path.exists(of) == False) :
                 os.mkdir(of)
-
-            hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"])
+              
+              
+            hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"])  
+            
+            if stats.get("malicious") != 0 :
+                hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"], True)
             
             hb.style("h1, p, a", ["font-family: Verdana, Geneva, sans-serif;"])
             hb.style(".engine_result", ["background-color: rgb(186, 189, 182);", "width: 20%;", "border-radius: 15px;", "padding: 10px;","margin-bottom: 2%;" ,"margin-left: 3%"])
@@ -105,31 +117,35 @@ class VTScanSystem:
             print("Rapport généré avec succès ! Fichier : " + hb.file.name)
             
     def getPathsFromFolder(self, dir) :
-        contents = os.listdir(dir)
-        
+        try:
+            contents = os.listdir(dir)
+        except FileNotFoundError:
+            print("Le répertoire spécifié n'existe pas.. Vérifiez la configuration.")
+            return
+            
         for content in contents :
             if os.path.isdir(dir + content) == False :
                 paths.append(dir + content)             
 
-def createLog(result, scannedFile) :
-    BUF_SIZE = 65536
-    of = config_data["textLogsOutputFolder"]
+    def createLog(self, result) :
+        BUF_SIZE = 65536
+        of = config_data["textLogsOutputFolder"]
 
-    sha256 = hashlib.sha256()
+        sha256 = hashlib.sha256()
 
-    with open(scannedFile, "rb") as f:
-        while True:
-            data = f.read(BUF_SIZE)
-            if not data:
-                break
-            sha256.update(data)
-    
-    if(os.path.exists(of) == False) :
-        os.mkdir(of)
-    
-    logFile = open(of + str(datetime.date.today()) + ".txt", "a")    
-    logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(scannedFile) + ")\n")   
-    logFile.close()
+        with open(self.file_path, "rb") as f:
+            while True:
+                data = f.read(BUF_SIZE)
+                if not data:
+                    break
+                sha256.update(data)
+        
+        if(os.path.exists(of) == False) :
+            os.mkdir(of)
+        
+        logFile = open(of + str(datetime.date.today()) + ".txt", "a")    
+        logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(self.file_path) + ")\n")   
+        logFile.close()
     
     
 if __name__ == "__main__":
