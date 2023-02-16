@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# @Author: Thomas PRADEAU
+# @Date: 03/02/2023
+# @Email: pradeau.thomas0@gmail.com
+
 import vt
 import time
 import os
@@ -12,19 +17,22 @@ import vonage
 data_dir = "../data/vt_data/"
 config_file = open(data_dir + "conf.yaml", "r")
 
-config_data = yaml.load(config_file, Loader=SafeLoader)
+config_data = yaml.load(config_file, Loader=SafeLoader) #Lecture du fichier de config
 
 paths = config_data["filelist"]
 dirs = config_data["folderlist"]
 
+#Classe SMSEngine, utilisation de l'API Vonage
 class SMSEngine:
     def __init__(self) -> None:
-        self.API_Key = config_data["Vonage_API_Key"]
+        self.API_Key = config_data["Vonage_API_Key"] 
         self.API_Secret = config_data["Vonage_API_Secret"]
         
-        self.client = vonage.Client(key=self.API_Key, secret=self.API_Secret)
+        self.client = vonage.Client(key=self.API_Key, secret=self.API_Secret) #Nouvelle instance de la classe avec la clée et MDP API
         self.sms = vonage.Sms(self.client)
         
+        
+    #Méthode send, envoie un message en prenant en paramètre le nom du fichier malveillant (Chemin absolu)    
     def send(self, filename):
         response = self.sms.send_message(
             {
@@ -34,11 +42,13 @@ class SMSEngine:
             }
         )
         
+        #On prévient si ça foire ou pas
         if response["messages"][0]["status"] == "0":
             print("Message envoyé avec succès !")
         else:
             print(f"Erreur l'or de l'envoi du message : {response['messages'][0]['error-text']}")
 
+#Classe VTScanSystem, classe utilitaire pour le scan des fichiers et la génération de logs.
 class VTScanSystem:
     def __init__(self) -> None:
         self.vt = vt.Client(config_data["VT_API_Key"])
@@ -47,6 +57,7 @@ class VTScanSystem:
         self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
 
+    #Apelle l'API en donnant en paramètres le fichier et l'instance de la classe SMSEngine
     def apiScan(self, file, smsengine):
         try :
             data = self.vt.scan_file(open(file, 'rb'), True)
@@ -74,6 +85,7 @@ class VTScanSystem:
         self.createHTMLRapport(data)
         return True
 
+    #Permet d'append les données en fin de fichier, prends en paramètres les données du scan
     def appendTXTLogFile(self, data) :
         
         stats = data.stats
@@ -84,6 +96,7 @@ class VTScanSystem:
         elif (config_data["logHealthyFiles"]):
             self.createLog("Fichier sein")   
 
+    #Permer de créer un rapport HTML, prends en paramètres les données du scan
     def createHTMLRapport(self, data):
         stats = data.stats
         results = data.results
@@ -96,12 +109,13 @@ class VTScanSystem:
             if(os.path.exists(of) == False) :
                 os.mkdir(of)
               
-              
+            #Utilise une nouvelle instance d'HTMLBuilder pour créer un nouveau fichier.
             hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"])  
             
             if stats.get("malicious") != 0 :
                 hb = HTMLBuilder.Builder(config_data["htmlOutputFolder"], True)
             
+            #CSS
             hb.style("h1, p, a", ["font-family: Verdana, Geneva, sans-serif;"])
             hb.style(".engine_result", ["background-color: rgb(186, 189, 182);", "width: 20%;", "border-radius: 15px;", "padding: 10px;","margin-bottom: 2%;" ,"margin-left: 3%"])
             hb.style(".bad", ["background-color: rgb(255, 51, 51)"])
@@ -111,6 +125,7 @@ class VTScanSystem:
             hb.style(".result", ["color: black;", "font-weight: bold;"])
             hb.style("h1", ["text-align: center;", "font-weight: bold;"])
                 
+            #HTML    
             hb.H("", "1", "Rappport d'analyses du fichier " + self.file_path)
             hb.P([], "Nombre de moteurs utilisés : " + nbEngines)
             hb.P(["id='undetected_count'"], "Non détecté(s) : " + str(stats.get("undetected")))
@@ -140,6 +155,7 @@ class VTScanSystem:
             hb.CloseFile()
             print("Rapport généré avec succès ! Fichier : " + hb.file.name)
             
+    #Récupère tous les chemins des fichiers se trouvant dans les dossier à scanner, prends en paramètre un dossier.        
     def getPathsFromFolder(self, dir) :
         try:
             contents = os.listdir(dir)
@@ -151,6 +167,7 @@ class VTScanSystem:
             if os.path.isdir(dir + content) == False :
                 paths.append(dir + content)             
 
+    #Permet de créer un fichier de logs textuels, prends en paramètres les résultats de l'analyse
     def createLog(self, result) :
         BUF_SIZE = 65536
         of = config_data["textLogsOutputFolder"]
@@ -167,6 +184,7 @@ class VTScanSystem:
         if(os.path.exists(of) == False) :
             os.mkdir(of)
         
+        #Le fichier porte comme nom la date du jour formattée
         logFile = open(of + str(datetime.date.today()) + ".txt", "a")    
         logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(self.file_path) + ")\n")   
         logFile.close()
@@ -176,6 +194,7 @@ if __name__ == "__main__":
     vtscanner = VTScanSystem()
     smsengine = SMSEngine()
     
+    #On scanne les dossier si c'est activé
     if(config_data["enableDirScan"]) :   
         if(dirs == None) :
             print("Aucun dossier à scanner... Vérifiez la configuration.")
@@ -183,11 +202,14 @@ if __name__ == "__main__":
             for dir in dirs :
                 vtscanner.getPathsFromFolder(dir)
     
+    #Si ill n'y a pas de fichiers à scanner on quitte en erreur
     if(paths == None) :
         print("Aucun fichier à scanner... Vérifiez la configuration.")
         sys.exit(-1)
     else :
+        #Sinon on débute le scan
         for path in paths :
+            #Si le compteur dépasse le seuil et que le limiteur est activé alors on fait une pause
             if (vtscanner.queryCounter >= vtscanner.queryThreshold) and config_data["enableQueryLimiter"]:
                 print("Attente de " + str(vtscanner.queryCooldown) + " secondes...")
                 time.sleep(vtscanner.queryCooldown)
@@ -195,5 +217,6 @@ if __name__ == "__main__":
                 
             print("Scanning file : " + os.path.abspath(path))    
             
+            #Chaque scans résussis incrémente de compteur de scan
             if vtscanner.apiScan(os.path.abspath(path), smsengine) :
                 vtscanner.queryCounter += 1
