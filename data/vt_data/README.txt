@@ -23,3 +23,20 @@ textLogsOutputFolder: Spécifie le répertoire où sont déposés les logs simpl
 filelist: Spécifie la liste des fichiers à scanner.
 
 folderlist: Spécifie la liste des répertoires à scanner.
+
+
+##########################
+# Option des alertes SMS #
+##########################
+
+enableSMSAlert: Active ou non les alertes par SMS.
+
+Vonage_API_Key: Spécifie la clé d'API utilisé par le client Vonage
+
+Vonage_API_Secret: Spécifié le mot de passe nécessaire par le client Vonage
+
+SMSSender: Nom utilisé comme expéditeur du SMS.
+
+receiver: Numéro de téléphone du destinataire, doit être au format suivant : 33612345678
+
+

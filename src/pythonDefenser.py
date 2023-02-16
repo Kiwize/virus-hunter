@@ -7,6 +7,7 @@ import hashlib
 import yaml
 from yaml.loader import SafeLoader
 import HTMLBuilder
+import vonage
 
 data_dir = "../data/vt_data/"
 config_file = open(data_dir + "conf.yaml", "r")
@@ -16,6 +17,28 @@ config_data = yaml.load(config_file, Loader=SafeLoader)
 paths = config_data["filelist"]
 dirs = config_data["folderlist"]
 
+class SMSEngine:
+    def __init__(self) -> None:
+        self.API_Key = config_data["Vonage_API_Key"]
+        self.API_Secret = config_data["Vonage_API_Secret"]
+        
+        self.client = vonage.Client(key=self.API_Key, secret=self.API_Secret)
+        self.sms = vonage.Sms(self.client)
+        
+    def send(self, filename):
+        response = self.sms.send_message(
+            {
+                "from": config_data["SMSSender"],
+                "to": config_data["receiver"],
+                "text": "Un fichier malveillant a été détecté !\nMenace mise en quarantaine.\nFichier : " + filename + "\n",
+            }
+        )
+        
+        if response["messages"][0]["status"] == "0":
+            print("Message envoyé avec succès !")
+        else:
+            print(f"Erreur l'or de l'envoi du message : {response['messages'][0]['error-text']}")
+
 class VTScanSystem:
     def __init__(self) -> None:
         self.vt = vt.Client(config_data["VT_API_Key"])
@@ -24,7 +47,7 @@ class VTScanSystem:
         self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
 
-    def apiScan(self, file):
+    def apiScan(self, file, smsengine):
         try :
             data = self.vt.scan_file(open(file, 'rb'), True)
         except PermissionError :
@@ -44,8 +67,9 @@ class VTScanSystem:
         if data.stats.get("malicious") != 0 :
             os.rename(os.path.abspath(file), os.path.abspath("../data/vt_data/quarantine/" + os.path.basename(file)))
             self.file_path = os.path.abspath("../data/vt_data/quarantine/" + os.path.basename(file))
+            if config_data["enableSMSAlert"]:
+                smsengine.send(os.path.abspath(file))
             
-        print(self.file_path)
         self.appendTXTLogFile(data)
         self.createHTMLRapport(data)
         return True
@@ -150,6 +174,7 @@ class VTScanSystem:
     
 if __name__ == "__main__":
     vtscanner = VTScanSystem()
+    smsengine = SMSEngine()
     
     if(config_data["enableDirScan"]) :   
         if(dirs == None) :
@@ -170,5 +195,5 @@ if __name__ == "__main__":
                 
             print("Scanning file : " + os.path.abspath(path))    
             
-            if vtscanner.apiScan(os.path.abspath(path)) :
+            if vtscanner.apiScan(os.path.abspath(path), smsengine) :
                 vtscanner.queryCounter += 1
