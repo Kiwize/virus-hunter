@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-#Custom tool for building HTML documents.
-# @Author: Thomas PRADEAU
-# @Date: 04/02/2023
-# @Email: pradeau.thomas0@gmail.com
+#---------------------------------------------------
+#JVA-01 | Thomas PRADEAU | 2023-02-04 | v.2.1
+#---------------------------------------------------
 
 import datetime
 import codecs

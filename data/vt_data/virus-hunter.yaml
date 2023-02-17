@@ -9,17 +9,24 @@ queryCooldown: 50
 enableQueryLimiter: True
 
 #Clé API Virustotal
-VT_API_Key: "Clé API Virustotal"
+VT_API_Key: "eb09093303b95b702d41a7aeb73d5d2e1c0a766587d2d85133cef714a49d8cea"
 
 #Destination des logs
 htmlOutputFolder: "./logs/html/"
 textLogsOutputFolder: "./logs/txt/"
 
-#Fichiers et dossiers à scanner
+#Fichiers à scanner
+#Lister les chemins vers les fichiers sous la forme suivante :
+# - "chemin/vers/fichier/fichier1.txt"
+# - "chemin/vers/fichier/fichier2.txt"
+
 filelist: 
- - "../data/vt_data/positive_eicar.txt"
- - "../data/vt_data/test_file.txt"
- 
+
+#Dossiers à scanner
+#Lister les chemins vers les dossiers sous la forme suivante :
+# - "chemin/vers/dossier/"
+# - "chemin/vers/dossier/" 
+
 folderlist:
 
 #Vonage API Settings

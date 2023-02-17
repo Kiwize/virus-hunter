@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# @Author: Thomas PRADEAU
-# @Date: 03/02/2023
-# @Email: pradeau.thomas0@gmail.com
+#---------------------------------------------------
+#JVA-01 | Thomas PRADEAU | 2023-02-04 | v.2.1
+#---------------------------------------------------
 
 import vt
 import time
@@ -15,12 +15,25 @@ import HTMLBuilder
 import vonage
 
 data_dir = "../data/vt_data/"
-config_file = open(data_dir + "conf.yaml", "r")
+config_file = open(data_dir + "virus-hunter.yaml", "r")
 
 config_data = yaml.load(config_file, Loader=SafeLoader) #Lecture du fichier de config
 
-paths = config_data["filelist"]
+
+
+paths = []
+filelistArray = config_data["filelist"]
+if filelistArray != None :
+    paths = filelistArray
+
 dirs = config_data["folderlist"]
+
+containsFiles = filelistArray != None
+containsDirs = dirs != None
+
+if containsFiles == False and containsDirs == False :
+    print("Aucune ressources à scanner... Vérifiez la configuration.")
+    sys.exit(-1)
 
 #Classe SMSEngine, utilisation de l'API Vonage
 class SMSEngine:
@@ -31,9 +44,8 @@ class SMSEngine:
         self.client = vonage.Client(key=self.API_Key, secret=self.API_Secret) #Nouvelle instance de la classe avec la clée et MDP API
         self.sms = vonage.Sms(self.client)
         
-        
     #Méthode send, envoie un message en prenant en paramètre le nom du fichier malveillant (Chemin absolu)    
-    def send(self, filename):
+    def send(self, filename):        
         response = self.sms.send_message(
             {
                 "from": config_data["SMSSender"],
@@ -51,10 +63,9 @@ class SMSEngine:
 #Classe VTScanSystem, classe utilitaire pour le scan des fichiers et la génération de logs.
 class VTScanSystem:
     def __init__(self) -> None:
-        self.vt = vt.Client(config_data["VT_API_Key"])
-        
+        self.vt = vt.Client(config_data["VT_API_Key"])     
         self.queryCounter = 0
-        self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause
+        self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause      
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
 
     #Apelle l'API en donnant en paramètres le fichier et l'instance de la classe SMSEngine
@@ -75,9 +86,11 @@ class VTScanSystem:
         
         self.file_path = file  
         
+        #Dans le cas où un fichier est malicieux
         if data.stats.get("malicious") != 0 :
             os.rename(os.path.abspath(file), os.path.abspath("../data/vt_data/quarantine/" + os.path.basename(file)))
             self.file_path = os.path.abspath("../data/vt_data/quarantine/" + os.path.basename(file))
+            #On envoie une alerte par SMS si c'est activé
             if config_data["enableSMSAlert"]:
                 smsengine.send(os.path.abspath(file))
             
@@ -154,19 +167,7 @@ class VTScanSystem:
             hb.close()    
             hb.CloseFile()
             print("Rapport généré avec succès ! Fichier : " + hb.file.name)
-            
-    #Récupère tous les chemins des fichiers se trouvant dans les dossier à scanner, prends en paramètre un dossier.        
-    def getPathsFromFolder(self, dir) :
-        try:
-            contents = os.listdir(dir)
-        except FileNotFoundError:
-            print("Le répertoire spécifié n'existe pas.. Vérifiez la configuration.")
-            return
-            
-        for content in contents :
-            if os.path.isdir(dir + content) == False :
-                paths.append(dir + content)             
-
+                        
     #Permet de créer un fichier de logs textuels, prends en paramètres les résultats de l'analyse
     def createLog(self, result) :
         BUF_SIZE = 65536
@@ -188,26 +189,37 @@ class VTScanSystem:
         logFile = open(of + str(datetime.date.today()) + ".txt", "a")    
         logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(self.file_path) + ")\n")   
         logFile.close()
+        
+    #Récupère tous les chemins des fichiers se trouvant dans les dossier à scanner, prends en paramètre un dossier.        
+    def getPathsFromFolder(self, dir):
+        try:
+            contents = os.listdir(dir)
+        except FileNotFoundError:
+            print("Le répertoire spécifié n'existe pas.. Vérifiez la configuration.")
+            return
+            
+        for content in contents :
+            if os.path.isdir(dir + content) == False :
+                paths.append(dir + content) 
+  
+ 
     
     
-if __name__ == "__main__":
+if __name__ == "__main__":      
+    if containsFiles == False :
+        print("Aucun fichier à scanner... Veuillez vérifier la configuration.")
+        sys.exit(-1)
+    
     vtscanner = VTScanSystem()
     smsengine = SMSEngine()
+
+    #On scanne les dossiers si c'est activé    
+    if(config_data["enableDirScan"]) and containsDirs :
+        for dir in dirs :
+            vtscanner.getPathsFromFolder(dir)  
     
-    #On scanne les dossier si c'est activé
-    if(config_data["enableDirScan"]) :   
-        if(dirs == None) :
-            print("Aucun dossier à scanner... Vérifiez la configuration.")
-        else : 
-            for dir in dirs :
-                vtscanner.getPathsFromFolder(dir)
-    
-    #Si ill n'y a pas de fichiers à scanner on quitte en erreur
-    if(paths == None) :
-        print("Aucun fichier à scanner... Vérifiez la configuration.")
-        sys.exit(-1)
-    else :
-        #Sinon on débute le scan
+    #Sinon on débute le scan
+    if containsFiles :
         for path in paths :
             #Si le compteur dépasse le seuil et que le limiteur est activé alors on fait une pause
             if (vtscanner.queryCounter >= vtscanner.queryThreshold) and config_data["enableQueryLimiter"]:
