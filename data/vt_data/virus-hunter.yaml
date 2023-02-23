@@ -21,7 +21,7 @@ textLogsOutputFolder: "./logs/txt/"
 # - "chemin/vers/fichier/fichier2.txt"
 
 filelist: 
-
+ - "../data/vt_data/test_file.txt"
 #Dossiers à scanner
 #Lister les chemins vers les dossiers sous la forme suivante :
 # - "chemin/vers/dossier/"

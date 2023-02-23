@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #---------------------------------------------------
-#JVA-01 | Thomas PRADEAU | 2023-02-04 | v.2.1
+#JVA-01 | Thomas PRADEAU | 2023-02-04 | v.3.0
 #---------------------------------------------------
 
 import vt
@@ -13,13 +13,13 @@ import yaml
 from yaml.loader import SafeLoader
 import HTMLBuilder
 import vonage
+import pefile
+import Window
 
 data_dir = "../data/vt_data/"
 config_file = open(data_dir + "virus-hunter.yaml", "r")
 
 config_data = yaml.load(config_file, Loader=SafeLoader) #Lecture du fichier de config
-
-
 
 paths = []
 filelistArray = config_data["filelist"]
@@ -96,8 +96,24 @@ class VTScanSystem:
             
         self.appendTXTLogFile(data)
         self.createHTMLRapport(data)
+        
+        print(self.file_path)
+        
+        self.isExe = os.access(self.file_path, os.X_OK)
+        #Vérifie l'exe
+        self.PEFIleVerifier()
         return True
 
+
+    def PEFIleVerifier(self):
+        if self.isExe :
+            print("Window PE file detected ! Verifying signature...")
+            
+            pe = pefile.PE(self.file_path)
+            pe.print_info()
+        
+        
+        
     #Permet d'append les données en fin de fichier, prends en paramètres les données du scan
     def appendTXTLogFile(self, data) :
         
@@ -201,23 +217,20 @@ class VTScanSystem:
         for content in contents :
             if os.path.isdir(dir + content) == False :
                 paths.append(dir + content) 
-  
- 
-    
-    
-if __name__ == "__main__":      
+                
+                
+def beginScan():
     if containsFiles == False :
         print("Aucun fichier à scanner... Veuillez vérifier la configuration.")
         sys.exit(-1)
     
     vtscanner = VTScanSystem()
     smsengine = SMSEngine()
-
     #On scanne les dossiers si c'est activé    
     if(config_data["enableDirScan"]) and containsDirs :
         for dir in dirs :
             vtscanner.getPathsFromFolder(dir)  
-    
+        
     #Sinon on débute le scan
     if containsFiles :
         for path in paths :
@@ -226,9 +239,13 @@ if __name__ == "__main__":
                 print("Attente de " + str(vtscanner.queryCooldown) + " secondes...")
                 time.sleep(vtscanner.queryCooldown)
                 vtscanner.queryCounter = 0
-                
+                    
             print("Scanning file : " + os.path.abspath(path))    
-            
+                
             #Chaque scans résussis incrémente de compteur de scan
             if vtscanner.apiScan(os.path.abspath(path), smsengine) :
                 vtscanner.queryCounter += 1
+
+if __name__ == "__main__":      
+    win = Window.Window()
+    win.initWindow()
