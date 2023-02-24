@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 #---------------------------------------------------
-#JVA-01 | Thomas PRADEAU | 2023-02-04 | v.3.0
+#TPR-01 | Thomas PRADEAU | 2023-02-04 | v.3.0
 #---------------------------------------------------
 
 import PyQt5.QtWidgets as widgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
 from PyQt5.QtCore import QCoreApplication
 import sys
-import VirusHunter as vh
 
 class Window:
     def __init__(self, vtscanner):
@@ -21,6 +20,7 @@ class Window:
         app.setStyleSheet(QSSLoader("globalStyle.css"))
         win = QMainWindow()
         win.setGeometry(0, 0, self.winW,self.winH)
+        win.setFixedSize(self.winW, self.winH)
         win.setWindowTitle(self.winName)
         
         self.win = win
@@ -56,6 +56,9 @@ class Window:
         win.show()   
         sys.exit(app.exec_())
         
+        
+    def windowResizeCallback(self):
+        self.configButton.move(self.winW / 2 - self.configButton.width() / 2, self.winH - self.configButton.height())
         
     def beginScanCallback(self):
         self.scanstate.setObjectName("scan_state_default")
