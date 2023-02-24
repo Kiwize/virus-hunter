@@ -1,0 +1,8 @@
+QPushButton {
+    background-color: blue;
+    border-radius: 10px;
+}
+
+QPushButton:checked {
+    background-color: red;
+}

@@ -1,5 +1,4 @@
 *.html
-*.css
 __pycache__
 
 logs

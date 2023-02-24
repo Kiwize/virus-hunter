@@ -1,0 +1,16 @@
+QLabel {
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+}
+
+QLabel#scan_state_default {
+    color: white;
+}
+
+QLabel#scan_state_good {
+    color: green;
+}
+
+QLabel#scan_state_error {
+    color: red;
+}

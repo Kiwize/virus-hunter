@@ -249,3 +249,5 @@ if __name__ == "__main__":
     smsengine = SMSEngine()   
     win = Window.Window(vtscanner)
     win.initWindow()
+    
+    
