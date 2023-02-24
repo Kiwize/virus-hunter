@@ -10,10 +10,11 @@ import sys
 import VirusHunter as vh
 
 class Window:
-    def __init__(self) -> None:
+    def __init__(self, vtscanner) -> None:
         self.winH = 300
         self.winW = 300
         self.winName = "Virustotal Scanbot"
+        self.vtscanner = vtscanner
 
     def initWindow(self):
         app = QApplication(sys.argv)
@@ -37,8 +38,8 @@ class Window:
         
         scanstate = widgets.QLabel(win)
         scanstate.setText("Aucun scan en cours.")
-        
-        scanstate.move(self.winW / 2 - scanstate.width() / 2, 70)
+        scanstate.adjustSize()
+        scanstate.move(self.winW / 2 - scanstate.width() / 2, 80)
         
         self.scanstate = scanstate
         
@@ -50,10 +51,12 @@ class Window:
         self.button.setEnabled(False)
         self.scanstate.setText("Scan en cours...")
         self.scanstate.adjustSize()
+        self.scanstate.move(self.winW / 2 - self.scanstate.width() / 2, 80)
         QCoreApplication.processEvents()
 
-        vh.beginScan()
+        self.vtscanner.beginScan()
         
         self.button.setEnabled(True)
         self.scanstate.setText("Scan terminé !")
         self.scanstate.adjustSize()
+        self.scanstate.move(self.winW / 2 - self.scanstate.width() / 2, 80)

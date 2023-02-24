@@ -216,36 +216,36 @@ class VTScanSystem:
             
         for content in contents :
             if os.path.isdir(dir + content) == False :
-                paths.append(dir + content) 
+                paths.append(dir + content)                
                 
-                
-def beginScan():
-    if containsFiles == False :
-        print("Aucun fichier à scanner... Veuillez vérifier la configuration.")
-        sys.exit(-1)
-    
-    vtscanner = VTScanSystem()
-    smsengine = SMSEngine()
-    #On scanne les dossiers si c'est activé    
-    if(config_data["enableDirScan"]) and containsDirs :
-        for dir in dirs :
-            vtscanner.getPathsFromFolder(dir)  
+    def beginScan(self):
+        if containsFiles == False :
+            print("Aucun fichier à scanner... Veuillez vérifier la configuration.")
+            sys.exit(-1)
         
-    #Sinon on débute le scan
-    if containsFiles :
-        for path in paths :
-            #Si le compteur dépasse le seuil et que le limiteur est activé alors on fait une pause
-            if (vtscanner.queryCounter >= vtscanner.queryThreshold) and config_data["enableQueryLimiter"]:
-                print("Attente de " + str(vtscanner.queryCooldown) + " secondes...")
-                time.sleep(vtscanner.queryCooldown)
-                vtscanner.queryCounter = 0
+        
+        #On scanne les dossiers si c'est activé    
+        if(config_data["enableDirScan"]) and containsDirs :
+            for dir in dirs :
+                vtscanner.getPathsFromFolder(dir)  
+            
+        #Sinon on débute le scan
+        if containsFiles :
+            for path in paths :
+                #Si le compteur dépasse le seuil et que le limiteur est activé alors on fait une pause
+                if (vtscanner.queryCounter >= vtscanner.queryThreshold) and config_data["enableQueryLimiter"]:
+                    print("Attente de " + str(vtscanner.queryCooldown) + " secondes...")
+                    time.sleep(vtscanner.queryCooldown)
+                    vtscanner.queryCounter = 0
+                        
+                print("Scanning file : " + os.path.abspath(path))    
                     
-            print("Scanning file : " + os.path.abspath(path))    
-                
-            #Chaque scans résussis incrémente de compteur de scan
-            if vtscanner.apiScan(os.path.abspath(path), smsengine) :
-                vtscanner.queryCounter += 1
+                #Chaque scans résussis incrémente de compteur de scan
+                if vtscanner.apiScan(os.path.abspath(path), smsengine) :
+                    vtscanner.queryCounter += 1
 
-if __name__ == "__main__":      
-    win = Window.Window()
+if __name__ == "__main__":   
+    vtscanner = VTScanSystem()
+    smsengine = SMSEngine()   
+    win = Window.Window(vtscanner)
     win.initWindow()
