@@ -1,0 +1,45 @@
+Notion de support de stockage.
+> Partition
+> Disques
+> Volumes
+
+- Files, directories
+
+> copy
+> dir
+> delete
+> rename
+
+Utilitaires de disques CMD (diskpart, chkdsk, mountvol)
+Scripter
+
+(Programmes graphiques)
+
+> Explorer / voir base de registres. (Associer un prog au menu contextuel)
+> MMC (Microsoft Management Console) (Gestion de l'ordinateur) - Gestion des certificats
+
+Systèmes de fichiers (FAT & NTFS), cacher de la payload
+ADS, Alternate Data Stream (flux de données vers les fichiers ??)
+
+Hex Workshop -> Soft lire byte level
+
+
+Séquence de boot (UEFI BIOS).
+Firmware charge les interruptions matérielles, lire MBR (Table des partitions, stocke les partition du disque, décrit les partitions)
+repère la partition active, part de boot, récupère le secteur de boot, load l'OS.
+
+Séquence de boot de Windows
+Voir doc
+
+BDCEdit -> Outil cli pour éditer le boot sector
+Documenter la séquence de boot
+
+Le registre peut permettre de modifier ce qui démarre ou pas (Quand le user se connecte ou quand la machine démarre).
+
+
+======= A documenter (V4)
+
+Fichier, répertoires, systèmes de gestion de fichiers.
+CLI gérer le système de gestion de fichiers.
+
+
