@@ -5,6 +5,7 @@
 
 import PyQt5.QtWidgets as widgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
+from PyQt5.QtGui import QFont
 from PyQt5.QtCore import QCoreApplication
 import sys
 import VirusHunter
@@ -18,7 +19,7 @@ class Window:
         
     def initWindow(self):
         app = QApplication(sys.argv)
-        app.setStyleSheet(QSSLoader("globalStyle.css"))
+        app.setStyleSheet(QSSLoader("qss/globalStyle.css"))
         win = QMainWindow()
         win.setGeometry(0, 0, self.winW,self.winH)
         win.setFixedSize(self.winW, self.winH)
@@ -83,17 +84,33 @@ class SubWindow(QWidget):
     def __init__(self):
         super(SubWindow, self).__init__()
         self.resize(400, 300)    
-        self.setStyleSheet(QSSLoader("configStyle.css"))
+        self.setStyleSheet(QSSLoader("qss/configStyle.css"))
         
-        self.label = widgets.QLabel(self)
-        self.label.setText("Hello World !")
-        self.label.adjustSize()
-        self.label.move(int(self.width() / 2 - self.label.width() / 2), int(self.height() - self.label.height()))
+        font = QFont()
+        font.setPointSize(15)
         
-        self.testButton = widgets.QPushButton("Toggle", self)
-        self.testButton.setCheckable(True)
-        self.testButton.setGeometry(50, 50, 50, 25)
+        self.enableDirScanLabel = widgets.QLabel(self)
+        self.enableDirScanLabel.setText("Scan des dossier : ")
+        self.enableDirScanLabel.setFont(font)
+        self.enableDirScanLabel.adjustSize()
+        self.enableDirScanLabel.move(10, 10)
         
+        self.enableDirScanButton = widgets.QPushButton(self)
+        self.enableDirScanButton.setCheckable(True)
+        self.enableDirScanButton.setGeometry(15 + self.enableDirScanLabel.width(), 15, 15, 15)
+        
+        self.saveButton = widgets.QPushButton("Save", self)
+        self.saveButton.setGeometry(100, 100, 50, 50)
+        self.saveButton.clicked.connect(self.setSettings)
+        
+        
+    def loadSettings(self):
+        self.enableDirScanButton.setChecked(VirusHunter.config_data["enableDirScan"])
+        
+    def setSettings(self):
+        VirusHunter.cfg.setSetting("enableDirScan", self.saveButton.isChecked())
+        
+        VirusHunter.cfg.saveSettings()
         
      
 def QSSLoader(fileData):

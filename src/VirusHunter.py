@@ -6,22 +6,23 @@
 import vt
 import time
 import os
+import stat
 import sys
 import datetime
 import hashlib
-import yaml
-from yaml.loader import SafeLoader
 import HTMLBuilder
 import vonage
 import pefile
 import Window
 import subprocess
+import ConfigHandler
 
 data_dir = "../data/vt_data/"
-config_file = open(data_dir + "virus-hunter.yaml", "r")
-
-config_data = yaml.load(config_file, Loader=SafeLoader) #Lecture du fichier de config
-
+ 
+cfg = ConfigHandler.Config(data_dir + "virus-hunter.yaml")
+cfg.load()
+config_data = cfg.getData()
+    
 paths = []
 filelistArray = config_data["filelist"]
 if filelistArray != None :
@@ -68,6 +69,7 @@ class VTScanSystem:
         self.queryCounter = 0
         self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause      
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
+        self.is_signed = False
 
     def close(self) :
         self.vt.close()
@@ -103,21 +105,26 @@ class VTScanSystem:
         
         print(self.file_path)
         
-        try:
-            subprocess.call(self.file_path)
+        st = os.stat(self.file_path)
+        
+        if st.st_mode & stat.S_IXUSR :
             self.PEFIleVerifier()
-        except OSError:
-            print("Le fichier n'est par un exécutable")
-        #Vérifie l'exe
-        return True
 
+        return True
 
     def PEFIleVerifier(self):
         try:
             print("Window PE file detected ! Verifying signature...")
                 
             pe = pefile.PE(self.file_path)
-            pe.print_info()
+            
+            if hasattr(pe, 'DIRECTORY_ENTRY_CERTIFICATE'):
+                print("Certificat valide !")
+                self.is_signed = True
+            else:
+                print("Aucun certificat valide trouvé...")
+                self.is_signed = False
+            
         except pefile.PEFormatError:
             print("Erreur de format PE...")
         
@@ -130,8 +137,7 @@ class VTScanSystem:
         if stats.get("malicious") != 0 :
             self.createLog("Fichier malicieux : " + str(stats.get("malicious")) + "/" + nbEngines)
         elif (config_data["logHealthyFiles"]):
-            self.createLog("Fichier sein")   
-            
+            self.createLog("Fichier sein")          
                         
     #Permet de créer un fichier de logs textuels, prends en paramètres les résultats de l'analyse
     def createLog(self, result) :
@@ -193,7 +199,7 @@ class VTScanSystem:
                 if vtscanner.apiScan(os.path.abspath(path), smsengine) :
                     vtscanner.queryCounter += 1  
 
-if __name__ == "__main__":   
+if __name__ == "__main__":
     vtscanner = VTScanSystem()
     vtscanner.close()
     smsengine = SMSEngine()   
