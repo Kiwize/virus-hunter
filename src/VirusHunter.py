@@ -15,6 +15,7 @@ import HTMLBuilder
 import vonage
 import pefile
 import Window
+import subprocess
 
 data_dir = "../data/vt_data/"
 config_file = open(data_dir + "virus-hunter.yaml", "r")
@@ -42,7 +43,7 @@ class SMSEngine:
         self.API_Secret = config_data["Vonage_API_Secret"]
         
         self.client = vonage.Client(key=self.API_Key, secret=self.API_Secret) #Nouvelle instance de la classe avec la clée et MDP API
-        self.sms = vonage.Sms(self.client)
+        self.sms = vonage.Sms(self.client)         
         
     #Méthode send, envoie un message en prenant en paramètre le nom du fichier malveillant (Chemin absolu)    
     def send(self, filename):        
@@ -67,6 +68,9 @@ class VTScanSystem:
         self.queryCounter = 0
         self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause      
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
+
+    def close(self) :
+        self.vt.close()
 
     #Apelle l'API en donnant en paramètres le fichier et l'instance de la classe SMSEngine
     def apiScan(self, file, smsengine):
@@ -99,20 +103,23 @@ class VTScanSystem:
         
         print(self.file_path)
         
-        self.isExe = os.access(self.file_path, os.X_OK)
+        try:
+            subprocess.call(self.file_path)
+            self.PEFIleVerifier()
+        except OSError:
+            print("Le fichier n'est par un exécutable")
         #Vérifie l'exe
-        self.PEFIleVerifier()
         return True
 
 
     def PEFIleVerifier(self):
-        if self.isExe :
+        try:
             print("Window PE file detected ! Verifying signature...")
-            
+                
             pe = pefile.PE(self.file_path)
             pe.print_info()
-        
-        
+        except pefile.PEFormatError:
+            print("Erreur de format PE...")
         
     #Permet d'append les données en fin de fichier, prends en paramètres les données du scan
     def appendTXTLogFile(self, data) :
@@ -141,7 +148,7 @@ class VTScanSystem:
                 sha256.update(data)
         
         if(os.path.exists(of) == False) :
-            os.mkdir(of)
+            os.mkdir(os.path.abspath(of))
         
         #Le fichier porte comme nom la date du jour formattée
         logFile = open(of + str(datetime.date.today()) + ".txt", "a")    
@@ -184,12 +191,11 @@ class VTScanSystem:
                     
                 #Chaque scans résussis incrémente de compteur de scan
                 if vtscanner.apiScan(os.path.abspath(path), smsengine) :
-                    vtscanner.queryCounter += 1
+                    vtscanner.queryCounter += 1  
 
 if __name__ == "__main__":   
     vtscanner = VTScanSystem()
+    vtscanner.close()
     smsengine = SMSEngine()   
     win = Window.Window(vtscanner)
     win.initWindow()
-    
-    

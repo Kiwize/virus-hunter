@@ -7,6 +7,7 @@ import PyQt5.QtWidgets as widgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget
 from PyQt5.QtCore import QCoreApplication
 import sys
+import VirusHunter
 
 class Window:
     def __init__(self, vtscanner):
@@ -14,7 +15,7 @@ class Window:
         self.winW = 300
         self.winName = "Virustotal Scanbot"
         self.vtscanner = vtscanner
-
+        
     def initWindow(self):
         app = QApplication(sys.argv)
         app.setStyleSheet(QSSLoader("globalStyle.css"))
@@ -29,19 +30,19 @@ class Window:
         label = widgets.QLabel(win)
         label.setText("Virustotal Scanbot V3.0")
         label.adjustSize()
-        label.move(self.winW / 2 - label.width() / 2, 10)
+        label.move(int(self.winW / 2 - label.width() / 2), 10)
         
         button = widgets.QPushButton(win)
         button.setText("Begin scan")
         button.adjustSize()
-        button.move(self.winW / 2 - button.width() / 2, 50)
+        button.move(int(self.winW / 2 - button.width() / 2), 50)
         button.clicked.connect(self.beginScanCallback)
         self.button = button
         
         configButton = widgets.QPushButton(win)
         configButton.setText("Configuration")
         configButton.adjustSize()
-        configButton.move(self.winW / 2 - configButton.width() / 2, self.winH - configButton.height())
+        configButton.move(int(self.winW / 2 - configButton.width() / 2), int(self.winH - configButton.height()))
         configButton.clicked.connect(self.subWindow.show)
         self.configButton = configButton
         
@@ -49,23 +50,24 @@ class Window:
         scanstate.setObjectName("scan_state_default")
         scanstate.setText("Aucun scan en cours.")
         scanstate.adjustSize()
-        scanstate.move(self.winW / 2 - scanstate.width() / 2, 80)
+        scanstate.move(int(self.winW / 2 - scanstate.width() / 2), 80)
          
         self.scanstate = scanstate
         
         win.show()   
+        self.vtscanner.close()
         sys.exit(app.exec_())
         
         
     def windowResizeCallback(self):
-        self.configButton.move(self.winW / 2 - self.configButton.width() / 2, self.winH - self.configButton.height())
+        self.configButton.move(int(self.winW / 2 - self.configButton.width() / 2), int(self.winH - self.configButton.height()))
         
     def beginScanCallback(self):
         self.scanstate.setObjectName("scan_state_default")
         self.button.setEnabled(False)
         self.scanstate.setText("Scan en cours...")
         self.scanstate.adjustSize()
-        self.scanstate.move(self.winW / 2 - self.scanstate.width() / 2, 80)     
+        self.scanstate.move(int(self.winW / 2 - self.scanstate.width() / 2), 80)     
         QCoreApplication.processEvents()
 
         self.vtscanner.beginScan()
@@ -74,7 +76,7 @@ class Window:
         self.button.setEnabled(True)
         self.scanstate.setText("Scan terminé !")    
         self.scanstate.adjustSize()
-        self.scanstate.move(self.winW / 2 - self.scanstate.width() / 2, 80)
+        self.scanstate.move(int(self.winW / 2 - self.scanstate.width() / 2), 80)
 
 
 class SubWindow(QWidget):
@@ -86,7 +88,7 @@ class SubWindow(QWidget):
         self.label = widgets.QLabel(self)
         self.label.setText("Hello World !")
         self.label.adjustSize()
-        self.label.move(self.width() / 2 - self.label.width() / 2, self.height() - self.label.height())
+        self.label.move(int(self.width() / 2 - self.label.width() / 2), int(self.height() - self.label.height()))
         
         self.testButton = widgets.QPushButton("Toggle", self)
         self.testButton.setCheckable(True)
