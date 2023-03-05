@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+#---------------------------------------------------
+#TPR-01 | Thomas PRADEAU | 2023-03-05 | v.3.2
+#---------------------------------------------------
+
 import yaml
 from yaml import SafeLoader
 

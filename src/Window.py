@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 #---------------------------------------------------
-#TPR-01 | Thomas PRADEAU | 2023-02-04 | v.3.0
+#TPR-01 | Thomas PRADEAU | 2023-03-05 | v.3.2
 #---------------------------------------------------
 
 import PyQt5.QtWidgets as widgets
