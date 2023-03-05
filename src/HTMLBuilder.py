@@ -75,7 +75,7 @@ class Builder :
         self.file.close()
         
     #Permer de créer un rapport HTML, prends en paramètres les données du scan
-    def createHTMLRapport(data, config_data, file_path):
+    def createHTMLRapport(data, config_data, file_path, isPE, is_signed):
         stats = data.stats
         results = data.results
 
@@ -108,6 +108,10 @@ class Builder :
             hb.P([], "Nombre de moteurs utilisés : " + nbEngines)
             hb.P(["id='undetected_count'"], "Non détecté(s) : " + str(stats.get("undetected")))
             hb.P(["id='undetected_count'"], "Détecté(s) : " + str(stats.get("malicious")))
+            if isPE == True and is_signed == False :
+                hb.P([], "Le fichier est un exécutable et ne contient aucun certificat valide...")
+            elif isPE == True and is_signed == True :
+                hb.P([], "Le fichier est un exécutable et possède un certificat valide !")
             
             if stats.get("malicious") != 0 :
                 hb.P(["id='file_status'"], "Fichier malicieux détecté !")

@@ -14,8 +14,9 @@ import HTMLBuilder
 import vonage
 import pefile
 import Window
-import subprocess
 import ConfigHandler
+from asn1crypto import cms
+import platform
 
 data_dir = "../data/vt_data/"
  
@@ -70,6 +71,7 @@ class VTScanSystem:
         self.queryThreshold = config_data["queryThreshold"] #Reqêtes avant pause      
         self.queryCooldown = config_data["queryCooldown"] #Pause en secondes
         self.is_signed = False
+        self.isPE = False
 
     def close(self) :
         self.vt.close()
@@ -99,34 +101,44 @@ class VTScanSystem:
             #On envoie une alerte par SMS si c'est activé
             if config_data["enableSMSAlert"]:
                 smsengine.send(os.path.abspath(file))
-            
+
+        if(platform.system() == "Windows"):
+            # Vérification de l'extension de fichier pour Windows
+            if self.file_path.lower().endswith((".exe", ".bat", ".cmd", ".com")):
+                self.isPE = True
+                self.PEFIleVerifier()      
+            else:
+                self.isPE = False
+
         self.appendTXTLogFile(data)
-        HTMLBuilder.Builder.createHTMLRapport(data, config_data, self.file_path)
-        
-        print(self.file_path)
-        
-        st = os.stat(self.file_path)
-        
-        if st.st_mode & stat.S_IXUSR :
-            self.PEFIleVerifier()
+        HTMLBuilder.Builder.createHTMLRapport(data, config_data, self.file_path, self.isPE, self.is_signed)
 
         return True
 
     def PEFIleVerifier(self):
         try:
-            print("Window PE file detected ! Verifying signature...")
+            print("Windows PE file detected ! Verifying signature...")
                 
             pe = pefile.PE(self.file_path)
+            sigoff = pe.OPTIONAL_HEADER.DATA_DIRECTORY[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]].VirtualAddress
+            siglen = pe.OPTIONAL_HEADER.DATA_DIRECTORY[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]].Size
+            pe.close()
             
-            if hasattr(pe, 'DIRECTORY_ENTRY_CERTIFICATE'):
-                print("Certificat valide !")
-                self.is_signed = True
-            else:
-                print("Aucun certificat valide trouvé...")
-                self.is_signed = False
+            with open(self.file_path, 'rb') as fh :
+                fh.seek(sigoff)
+                sig = fh.read(siglen)
+                
+            #Charge les données de la signature
+            #Si l'excep ValueError est raise, alors il n'y a pas de certificat
+            cms.ContentInfo.load(sig[8:])
+            self.is_signed = True
             
         except pefile.PEFormatError:
-            print("Erreur de format PE...")
+            #Si un fichier a la bonne extension mais ne contient pas la structure d'un PE
+            print("Erreur de format PE... Le fichier n'est peut-être pas un exécutable valide MS-DOS.")
+        except ValueError:
+            print("L'exécutable n'est pas signé.")
+            self.is_signed = False
         
     #Permet d'append les données en fin de fichier, prends en paramètres les données du scan
     def appendTXTLogFile(self, data) :
@@ -158,7 +170,11 @@ class VTScanSystem:
         
         #Le fichier porte comme nom la date du jour formattée
         logFile = open(of + str(datetime.date.today()) + ".txt", "a")    
-        logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(self.file_path) + ")\n")   
+        if self.isPE == True and self.is_signed == False:
+            logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(self.file_path) + ") /!\\ Le fichier ne contient aucun certificat valide !\n")        
+        else :
+            logFile.write(datetime.datetime.now().strftime("%H:%M:%S") + " SHA256 > " + sha256.hexdigest() + " : " + result + " (" + os.path.basename(self.file_path) + ")\n") 
+            
         logFile.close()
         
     #Récupère tous les chemins des fichiers se trouvant dans les dossier à scanner, prends en paramètre un dossier.        

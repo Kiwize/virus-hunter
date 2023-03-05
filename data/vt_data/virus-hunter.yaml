@@ -1,37 +1,18 @@
-#Paramètres globaux
-enableDirScan: True
-logHealthyFiles: True
-createHTMLRapport: True
-
-#Paramètre du limiteur de requêtes
-queryThreshold: 4
+SMSSender: Virustotal
+VT_API_Key: eb09093303b95b702d41a7aeb73d5d2e1c0a766587d2d85133cef714a49d8cea
+Vonage_API_Key: ''
+Vonage_API_Secret: ''
+createHTMLRapport: true
+enableDirScan: false
+enableQueryLimiter: false
+enableSMSAlert: false
+filelist:
+- C:/Windows/System32/notepad.exe
+- C:/Program Files (x86)/Microsoft Visual Studio/Shared/Python39_64/python.exe
+folderlist: null
+htmlOutputFolder: ./logs/html/
+logHealthyFiles: true
 queryCooldown: 50
-enableQueryLimiter: True
-
-#Clé API Virustotal
-VT_API_Key: "eb09093303b95b702d41a7aeb73d5d2e1c0a766587d2d85133cef714a49d8cea"
-
-#Destination des logs
-htmlOutputFolder: "./logs/html/"
-textLogsOutputFolder: "./logs/txt/"
-
-#Fichiers à scanner
-#Lister les chemins vers les fichiers sous la forme suivante :
-# - "chemin/vers/fichier/fichier1.txt"
-# - "chemin/vers/fichier/fichier2.txt"
-
-filelist: 
- - "../data/vt_data/test_file.txt"
-#Dossiers à scanner
-#Lister les chemins vers les dossiers sous la forme suivante :
-# - "chemin/vers/dossier/"
-# - "chemin/vers/dossier/" 
-
-folderlist:
-
-#Vonage API Settings
-enableSMSAlert: False
-Vonage_API_Key: "Clé public API Vonage"
-Vonage_API_Secret: "Mot de passe secret API Vonage"
-SMSSender: "Virustotal"
-receiver: "Téléphone destinataire"
+queryThreshold: 4
+receiver: ''
+textLogsOutputFolder: ./logs/txt/
