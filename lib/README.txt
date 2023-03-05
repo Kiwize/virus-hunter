@@ -13,3 +13,8 @@ https://pypi.org/project/vt-py/
 Vonage > API Client Vonage (SMS)
 
 https://pypi.org/project/vonage/
+
+
+Pefile > Parser de fichiers PE
+
+https://pypi.org/project/pefile/
